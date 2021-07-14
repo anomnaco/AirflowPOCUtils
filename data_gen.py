@@ -36,6 +36,7 @@ def build_cql(tenants, rows, filename, header):
             f.write(cql_header)
         for i in range(tenants):
             tenant_uuid = str(uuid.uuid4())
+            print("Tenant UUID: "+tenant_uuid)
             for j in range(rows_per_tenant):
                 metric_id = str(random.randint(0,100))
                 org_id = str(random.randint(0,20))

@@ -1,0 +1,12 @@
+cleanUp:
+  consistencyLevel: ONE
+  performValidation: Y
+  dryRun: N
+  retainRecentPrimaryKeyRow: N
+  filterConditions:
+    - tenantId: af99a6ef-8ba0-4b16-babc-d2f32b9004fa
+      query: ""
+  keyspaces:
+    - name: test
+      tables:
+        - data_by_date
