@@ -1,10 +1,10 @@
 cleanUp:
   consistencyLevel: ONE
   performValidation: Y
-  dryRun: N
+  dryRun: Y
   retainRecentPrimaryKeyRow: N
   filterConditions:
-    - tenantId: af99a6ef-8ba0-4b16-babc-d2f32b9004fa
+    - tenantId: c488891e-dd45-4206-a1f9-29933cb55423
       query: ""
   keyspaces:
     - name: test

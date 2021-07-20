@@ -1,6 +1,6 @@
 from airflow import DAG
 from airflow.operators.bash import BashOperator
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+#from airflow.providers.apache.spark.operators.spark_sql import SparkSqlOperator
 from airflow.utils.dates import days_ago
 from datetime import timedelta
 
@@ -32,19 +32,45 @@ with DAG(
     default_args=default_args,
     description='An example Cassandra DAG using cassandra hooks',
     schedule_interval=timedelta(minutes=30),
-    start_date=days_ago(2),
+    start_date=days_ago(0),
     tags=['tutorial'],
+    catchup=False
 ) as dag:
 
     bash_config_setup = BashOperator(
         task_id='bash_config_setup',
-        bash_command='docker cp /home/obi/Documents/UKG/AirflowPOC/AirflowPOCUtils/config kronoscleanup_dse1_1:/app; docker cp /home/obi/Documents/UKG/AirflowPOC/AirflowPOCUtils/config kronoscleanup_dse2_1:/app',
+        bash_command='docker cp /home/anant/Desktop/obi/AirflowPOC/AirflowPOCUtils/config kronoscleanup_dse1_1:/app; docker cp /home/anant/Desktop/obi/AirflowPOC/AirflowPOCUtils/config kronoscleanup_dse2_1:/app',
         dag=dag
     )
 
     bash_vacuuming_run = BashOperator(
         task_id='bash_vacuuming_run',
-        bash_command='docker exec -it kronoscleanup_dse1_1 dse spark-submit --master dse://172.20.0.3 --class com.kronos.kpifrm.vacuuming.cassandra.CleanUp --conf spark.kronos.config=/app/config/config.yaml --jars /jars/kronos.cleanup-assembly-0.0.1.jar --files=/app/config/config.yaml /jars/kronos.cleanup-assembly-0.0.1.jar localhost cassandra cassandra 2020-01-01 60'
+        bash_command='docker exec kronoscleanup_dse1_1 /app/config/cleanUp.sh localhost /app/config config.yaml 2020-01-01 60 ',
+        dag=dag
     )
 
-    bash_config_setup >> bash_vacuuming_run
+    spark_sql_pre_count = BashOperator(
+        task_id = "spark_sql_pre_count",
+        bash_command="docker exec kronoscleanup_dse1_1 /app/config/getCount.sh ",
+        dag=dag
+    )
+
+    bash_config_setup_run_two = BashOperator(
+        task_id='bash_config_setup_run_two',
+        bash_command='docker cp /home/anant/Desktop/obi/AirflowPOC/AirflowPOCUtils/config/config_2.yaml kronoscleanup_dse1_1:/app/config/config.yaml; docker cp /home/anant/Desktop/obi/AirflowPOC/AirflowPOCUtils/config/config_2.yaml kronoscleanup_dse2_1:/app/config/config.yaml ',
+        dag=dag
+    )
+
+    bash_vacuuming_run_two = BashOperator(
+        task_id='bash_vacuuming_run_two',
+        bash_command='docker exec kronoscleanup_dse1_1 /app/config/cleanUp.sh localhost /app/config config.yaml 2020-01-01 60 ',
+        dag=dag
+    )
+
+    spark_sql_post_count = BashOperator(
+        task_id = "spark_sql_post_count",
+        bash_command="docker exec kronoscleanup_dse1_1 /app/config/getCount.sh ",
+        dag=dag
+    )
+
+    bash_config_setup >> bash_vacuuming_run >> bash_config_setup_run_two >> spark_sql_pre_count >> bash_vacuuming_run_two >> spark_sql_post_count
